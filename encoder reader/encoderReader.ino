@@ -3,7 +3,7 @@
  *
  * This example code is in the public domain.
  */
-
+#define MC_1 CRC_PWM_1
 #include <CrcLib.h>
 #include <Encoder.h>
 using namespace CrcLib;
