@@ -31,7 +31,7 @@ void loop()
 	CrcLib::Update();
 	long enc;
 	enc = motor1Enco.read();
-	Serial.print("Encoder Value: ")
+	Serial.print("Encoder Value: ");
 	Serial.print(enc);
 	int speed;
 	// if a character is sent from the serial monitor,
@@ -49,7 +49,7 @@ void loop()
 	{
 		speed = 0;
 	}
-	Serial.print("; Motor Speed: ")
+	Serial.print("; Motor Speed: ");
 	Serial.print(speed);
 	CrcLib::SetPwmOutput(MC_1, speed);
 	

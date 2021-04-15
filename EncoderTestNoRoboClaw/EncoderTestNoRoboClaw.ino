@@ -31,7 +31,7 @@ const int MOTOR_SPEED = 13; //127*0.10=13
 
 void setup() {
   CrcLib::Initialize();
-  Serial.begin(2000000);  //High baud rate for faster printing on screen
+  Serial.begin(9600);  //High baud rate for faster printing on screen
 
   CrcLib::InitializePwmOutput(MC_1); //Use CrcLib::InitializePwmOutput(MC_1,1); to rapidly reverse this motor rotation direction all over the code
   
