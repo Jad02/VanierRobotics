@@ -31,23 +31,29 @@ void loop()
 	CrcLib::Update();
 	long enc;
 	enc = motor1Enco.read();
+	Serial.print("Encoder Value: ")
 	Serial.print(enc);
-	Serial.println();
-	CrcLib::SetPwmOutput(MC_1, MOTOR_SPEED);
+	int speed;
 	// if a character is sent from the serial monitor,
 	// reset both back to zero.
 	if (motor1Enco.read() < STOP_POSITION - MOTOR_SPEED)
 	{
-		CrcLib::SetPwmOutput(MC_1, MOTOR_SPEED);
+		speed = MOTOR_SPEED;
+		
 	}
 	else if (motor1Enco.read() > STOP_POSITION + MOTOR_SPEED)
 	{
-		CrcLib::SetPwmOutput(MC_1, -1 * MOTOR_SPEED);
+		speed = -1 * MOTOR_SPEED;
 	}
 	else
 	{
-		CrcLib::SetPwmOutput(MC_1, 0);
+		speed = 0;
 	}
+	Serial.print("; Motor Speed: ")
+	Serial.print(speed);
+	CrcLib::SetPwmOutput(MC_1, speed);
+	
+	Serial.println();
 	if (Serial.available())
 	{
 		Serial.read();
