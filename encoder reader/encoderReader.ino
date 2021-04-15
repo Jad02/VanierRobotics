@@ -28,6 +28,7 @@ long positionLeft = 0;
 
 void loop()
 {
+	CrcLib::Update();
 	long enc;
 	enc = motor1Enco.read();
 	Serial.print(enc);
