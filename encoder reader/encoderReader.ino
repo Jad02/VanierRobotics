@@ -4,8 +4,9 @@
  * This example code is in the public domain.
  */
 
+#include <CrcLib.h>
 #include <Encoder.h>
-
+using namespace CrcLib;
 // Change these pin numbers to the pins connected to your encoder.
 //   Best Performance: both pins have interrupt capability
 //   Good Performance: only the first pin has interrupt capability
