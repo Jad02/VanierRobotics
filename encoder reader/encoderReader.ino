@@ -32,7 +32,6 @@ void loop()
 	{
 		Serial.read();
 		Serial.println("Reset both knobs to zero");
-		knobLeft.write(0);
-		knobRight.write(0);
+		motor1Enco.write(0);
 	}
 }
