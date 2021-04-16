@@ -12,57 +12,57 @@ using namespace Crc;
 class EnMotor
 {
 public:
-  Encoder enc;
-  int target;
-  int speed;
-  int MAXSPEED;
-  int pinPWM;
-  const int TURN = 5281;
-  EnMotor(int pinA, int pinB, int pwm, int maxspeed)
-  {
-    enc = Encoder(pinA, pinB);
-    MAXSPEED = maxspeed;
-    CrcLib::InitializePwmOutput(pwm);
-    pinPWM = pwm;
-    enc.write(0);
-  }
-  long read(){
-    return enc.read();
-  }
-  void setSpeed()
-  {
-    if (enc.read() < target - 2 * MAXSPEED)
-    {
-      speed = MAXSPEED;
-    }
-    else if (enc.read() > target + 2 * MAXSPEED)
-    {
-      speed = -1 * MAXSPEED;
-    }
-    else
-    {
-      speed = 0;
-    }
-  }
-  void turn(int count, int dir)
-  {
-    long encVal;
-    encVal = enc.read();
-    int d = (dir > 0) ? 1 : -1;
-    target = encVal + d * count * TURN;
-  }
-  void update()
-  {
-    setSpeed();
-    CrcLib::SetPwmOutput(pinPWM, speed);
-    // Serial.print("Encoder Value: ");
-    // Serial.print(enc.read());
-    // int speed = setSpeed();
-    // Serial.print("; Motor Speed: ");
-    // Serial.print(speed);
-  }
+	Encoder enc;
+	int target;
+	int speed;
+	int MAXSPEED;
+	int pinPWM;
+	const int TURN = 5281;
+	EnMotor(int pinA, int pinB, int pwm, int maxspeed)
+	{
+		enc(pinA, pinB);
+		MAXSPEED = maxspeed;
+		CrcLib::InitializePwmOutput(pwm);
+		pinPWM = pwm;
+		enc.write(0);
+	}
+	long read()
+	{
+		return enc.read();
+	}
+	void setSpeed()
+	{
+		if (enc.read() < target - 2 * MAXSPEED)
+		{
+			speed = MAXSPEED;
+		}
+		else if (enc.read() > target + 2 * MAXSPEED)
+		{
+			speed = -1 * MAXSPEED;
+		}
+		else
+		{
+			speed = 0;
+		}
+	}
+	void turn(int count, int dir)
+	{
+		long encVal;
+		encVal = enc.read();
+		int d = (dir > 0) ? 1 : -1;
+		target = encVal + d * count * TURN;
+	}
+	void update()
+	{
+		setSpeed();
+		CrcLib::SetPwmOutput(pinPWM, speed);
+		// Serial.print("Encoder Value: ");
+		// Serial.print(enc.read());
+		// int speed = setSpeed();
+		// Serial.print("; Motor Speed: ");
+		// Serial.print(speed);
+	}
 };
-
 
 // Change these pin numbers to the pins connected to your encoder.
 //   Best Performance: both pins have interrupt capability
@@ -75,7 +75,6 @@ void setup()
 {
 	Serial.begin(9600);
 	Serial.println("Encoder Test:");
-
 }
 long positionLeft = 0;
 void loop()
