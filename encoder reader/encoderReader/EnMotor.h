@@ -1,5 +1,5 @@
 #include <Encoder.h>
-class Motor
+class EnMotor
 {
 public:
 	Encoder enc;
