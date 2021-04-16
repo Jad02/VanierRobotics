@@ -14,8 +14,10 @@ using namespace CrcLib;
 Encoder motor1Enco(CRC_ENCO_A, CRC_ENCO_B);
 
 bool motorRotating = LOW;
-const int STOP_POSITION = 5281*2;
+const int STOP_POSITION = 5281 * 2;
+const int TURN = 5281;
 const int MOTOR_SPEED = 50; //127*0.10=13
+int target = 0;
 void setup()
 {
 	Serial.begin(9600);
@@ -25,6 +27,14 @@ void setup()
 }
 
 long positionLeft = 0;
+
+void turn(int count, int dir)
+{
+	long enc;
+	enc = motor1Enco.read();
+	int d = (dir > 0) ? 1 : -1;
+	target = enc + d*count*TURN;
+}
 
 void loop()
 {
@@ -36,28 +46,28 @@ void loop()
 	int speed;
 	// if a character is sent from the serial monitor,
 	// reset both back to zero.
-	if (motor1Enco.read() < STOP_POSITION - 2*MOTOR_SPEED)
+	if (motor1Enco.read() < target - 2 * MOTOR_SPEED)
 	{
 		speed = MOTOR_SPEED;
 	}
-	else if (motor1Enco.read() > STOP_POSITION + 2*MOTOR_SPEED)
+	else if (motor1Enco.read() > target + 2 * MOTOR_SPEED)
 	{
 		speed = -1 * MOTOR_SPEED;
 	}
 	else
 	{
 		speed = 0;
+		Serial.print("; Status: Done")
 	}
 	Serial.print("; Motor Speed: ");
 	Serial.print(speed);
 	CrcLib::SetPwmOutput(MC_1, speed);
-	
+
 	Serial.println();
 	if (Serial.available())
 	{
-		Serial.read();
-		
 		Serial.println("Reset both knobs to zero");
-		motor1Enco.write(0);
+		// motor1Enco.write(0);
+		turn(2, 1);
 	}
 }
