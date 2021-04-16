@@ -12,15 +12,13 @@ using namespace Crc;
 class EnMotor
 {
 public:
-	Encoder enc;
 	int target;
 	int speed;
 	int MAXSPEED;
 	int pinPWM;
 	const int TURN = 5281;
-	EnMotor(int pinA, int pinB, int pwm, int maxspeed)
+	EnMotor(int pwm, int maxspeed)
 	{
-		enc = new Encoder(pinA, pinB);
 		MAXSPEED = maxspeed;
 		CrcLib::InitializePwmOutput(pwm);
 		pinPWM = pwm;
@@ -30,7 +28,7 @@ public:
 	{
 		return enc.read();
 	}
-	void setSpeed()
+	void setSpeed(Encoder enc)
 	{
 		if (enc.read() < target - 2 * MAXSPEED)
 		{
@@ -45,16 +43,16 @@ public:
 			speed = 0;
 		}
 	}
-	void turn(int count, int dir)
+	void turn(Endoder enc, int count, int dir)
 	{
 		long encVal;
 		encVal = enc.read();
 		int d = (dir > 0) ? 1 : -1;
 		target = encVal + d * count * TURN;
 	}
-	void update()
+	void update(Encoder enc)
 	{
-		setSpeed();
+		setSpeed(enc);
 		CrcLib::SetPwmOutput(pinPWM, speed);
 		// Serial.print("Encoder Value: ");
 		// Serial.print(enc.read());
@@ -69,7 +67,8 @@ public:
 //   Good Performance: only the first pin has interrupt capability
 //   Low Performance:  neither pin has interrupt capability
 
-EnMotor motor1(CRC_ENCO_A, CRC_ENCO_B, CRC_PWM_1, 50);
+EnMotor motor1(CRC_PWM_1, 50);
+Encoder encoder1(CRC_ENCO_A, CRC_ENCO_B)
 int dir = 1;
 void setup()
 {
@@ -80,13 +79,13 @@ long positionLeft = 0;
 void loop()
 {
 	CrcLib::Update();
-	motor1.update();
+	motor1.update(encoder1);
 	Serial.println();
 	if (Serial.available())
 	{
 		Serial.println("Reset both knobs to zero");
 		// motor1Enco.write(0);
-		motor1.turn(2, dir);
+		motor1.turn(encoder1, 2, dir);
 		dir = -1 * dir;
 	}
 }
