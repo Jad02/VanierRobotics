@@ -14,7 +14,7 @@ using namespace CrcLib;
 Encoder motor1Enco(CRC_ENCO_A, CRC_ENCO_B);
 
 bool motorRotating = LOW;
-const int STOP_POSITION = 1994;
+const int STOP_POSITION = 5281*2;
 const int MOTOR_SPEED = 50; //127*0.10=13
 void setup()
 {
