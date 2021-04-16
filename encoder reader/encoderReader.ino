@@ -36,12 +36,11 @@ void loop()
 	int speed;
 	// if a character is sent from the serial monitor,
 	// reset both back to zero.
-	if (motor1Enco.read() < STOP_POSITION - MOTOR_SPEED)
+	if (motor1Enco.read() < STOP_POSITION - 2*MOTOR_SPEED)
 	{
 		speed = MOTOR_SPEED;
-		
 	}
-	else if (motor1Enco.read() > STOP_POSITION + MOTOR_SPEED)
+	else if (motor1Enco.read() > STOP_POSITION + 2*MOTOR_SPEED)
 	{
 		speed = -1 * MOTOR_SPEED;
 	}
