@@ -12,7 +12,6 @@ using namespace Crc;
 class EnMotor
 {
 public:
-	Encoder enc;
 	int target;
 	int speed;
 	int MAXSPEED;
@@ -20,7 +19,7 @@ public:
 	const int TURN = 5281;
 	EnMotor(int pinA, int pinB, int pwm, int maxspeed)
 	{
-		enc(pinA, pinB);
+		Encoder enc(pinA, pinB);
 		MAXSPEED = maxspeed;
 		CrcLib::InitializePwmOutput(pwm);
 		pinPWM = pwm;
