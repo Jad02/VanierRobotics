@@ -1,7 +1,9 @@
 #include <CrcLib.h>
 #include <Encoder.h>
+#include <Wire.h>
+#include <SoftwareSerial.h>
 
-//Renaming pins with significant names
+
 #define DriveR CRC_PWM_1
 #define DriveL CRC_PWM_2
 #define Elev CRC_PWM_3
@@ -16,15 +18,19 @@
 using namespace Crc;
 
 Encoder ElevEnco(CRC_ENCO_A, CRC_ENCO_B);
-//Encoder DriveREnco(CRC_SERIAL_TX1,CRC_SERIAL_RX1);
-//Encoder DriveLEnco(CRC_I2C_SDA,CRC_I2C_SCL);
+Encoder DriveLEnco(CRC_I2C_SDA,CRC_I2C_SCL);
+Encoder DriveREnco(CRC_SERIAL_TXD1,CRC_SERIAL_RXD1);
+
 
 
 //Program constants
-const int STOP_POSITION = 385;
 const int Move1m = 385; 
-const int Rot = 65;
+const int Rot1_8 = 1102;
+const int Rot1_4 = 2205;
+const int Rot3_8 = 3308;
+const int Rot1_2 = 4411;
 
+const int Level0 = 0;
 const int Level1 = 1;
 const int Level2 = 2;
 const int Level2_5 = 2;
@@ -33,7 +39,7 @@ const int Level5 = 5;
 const int Level6 = 6;
 const int LevelMax = 9;
 
-const unsigned long CarActive = 5000;
+const unsigned long CarActive = 2000;
 const unsigned long ElevWheelsActive = 2000;
 const unsigned long SpongeReverse = 1000;
 const unsigned long ElevWheelsReverse =1000;
@@ -55,9 +61,8 @@ void setup() {
   CrcLib::InitializePwmOutput(Sponge);
   CrcLib::InitializePwmOutput(ElevWheels); 
   
-  //At power-up, establish a known encoder position value
-  // Best practice would be to instead assign a physical limit switch indicating the zero position, and have the robot search
-  // that position itself at sequence start in the void loop() part. This is called "homing".
+  DriveREnco.write(0);
+  DriveLEnco.write(0);
   ElevEnco.write(0);
 
 }
@@ -65,61 +70,59 @@ void setup() {
 void loop() {
   CrcLib::Update();
   Serial.println(ElevEnco.read());
-//  Serial.println(DriveREnco.read());
-//  Serial.println(DriveLEnco.read());
-
+  Serial.println(DriveREnco.read());
+  Serial.println(DriveLEnco.read());
+   
   while (Step <48)//sponge wall always on unitl step 
   {
     CrcLib::SetPwmOutput(Sponge,127);
   }
   
-    while (Step ==1) //rotate CC 45 deg
+    while (Step == 1) //rotate CC 1/8
    {
-//    if(DriveREnco.read() < Rot && DriveLEnco.read() > Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR, MaxSpeed) 
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Rot && DriveLEnco.read() < Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+    if(DriveREnco.read() < Rot1_8 && DriveLEnco.read() > -Rot1_8) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR, MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Rot1_8 && DriveLEnco.read() < -Rot1_8) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }
 
-//  while (Step ==2) //move 4.1 inch forward
-//  {
-//    if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > 4.1*Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
-//  }
-
-
+  while (Step == 2) //move 4.1  forward
+  {
+    if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > 4.1*Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
+  }
   
-  while (Step ==3) //Compress Car jack and put Elev at 0
+  while (Step == 3) //Compress Car jack hold
   {
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -150,7 +153,6 @@ void loop() {
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
       Step++;
     }
   }
@@ -165,25 +167,24 @@ void loop() {
     else 
     {
       CrcLib::SetPwmOutput(ElevWheels, 0);
-      Step++;
       CurentTime = 0;
+      Step++;
     }
   }
 
-  while (Step ==6) //uncompress car and level 1
+  while (Step == 6) //uncompress car and level 0
   {
-    if(ElevEnco.read() < Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
-      CrcLib::SetPwmOutput(Elev, MaxSpeed); 
+      CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() > Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
-      CrcLib::SetPwmOutput(Elev,-MaxSpeed);
+      CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -193,31 +194,31 @@ void loop() {
     else 
     {
       CrcLib::SetPwmOutput(Car, 0);
-      Step++;
       CurentTime = 0;
+      Step++;
     }
   }
 
-  while (Step == 7) // move F 4.4
+  while (Step == 7) // Forward 4.4
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > 4.1*Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > 4.1*Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }
 
   while (Step ==8) // Compress Car and hold
@@ -240,23 +241,23 @@ void loop() {
 
   while (Step == 9) // Move back 4.2, level 5 
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
 
     if(ElevEnco.read() < Level5) //Encoder position not yet reached
       {
@@ -269,30 +270,29 @@ void loop() {
     else 
       {
         CrcLib::SetPwmOutput(Elev,0);
-        ElevEnco.write(0);
         Step++;
       }
     }
 
-     while (Step == 10) //rotate CC 90 deg and elevatorwheels on 
+     while (Step == 10) //rotate CC 1/4 and elevatorwheels on 
      {
-//    if(DriveREnco.read() < Rot && DriveLEnco.read() > Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR, MaxSpeed) 
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Rot && DriveLEnco.read() < Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+    if(DriveREnco.read() < Rot1_4 && DriveLEnco.read() > -Rot1_4) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR, MaxSpeed); 
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Rot1_4 && DriveLEnco.read() < -Rot1_4) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
     unsigned long  CurentTime = millis();
     if (CurentTime < ElevWheelsActive)
     {
@@ -306,20 +306,19 @@ void loop() {
     }
   }
 
-  while (Step == 11)// uncompress Car Level 1
+  while (Step == 11)// uncompress Car Level 0
   {
-    if(ElevEnco.read() > Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() < Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -336,24 +335,24 @@ void loop() {
 
   while (Step == 12)// Forward 2.1
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > 4.1*Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > 4.1*Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }
 
   while (Step == 13) //Compress Car and hold
@@ -387,7 +386,6 @@ void loop() {
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
       Step++;
     }
   }
@@ -407,20 +405,19 @@ void loop() {
     }
   }
 
-  while (Step == 16)// uncompress Car Level 1
+  while (Step == 16)// uncompress Car Level 0
   {
-    if(ElevEnco.read() > Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() < Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -437,24 +434,24 @@ void loop() {
 
   while (Step == 17)// Forward 2.3
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }
 
  while (Step == 18) //Compress Car and hold
@@ -477,23 +474,23 @@ void loop() {
 
     while (Step == 20) // Move back 2.2, level 1
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
 
     if(ElevEnco.read() < Level1) //Encoder position not yet reached
       {
@@ -506,30 +503,29 @@ void loop() {
     else 
       {
         CrcLib::SetPwmOutput(Elev,0);
-        ElevEnco.write(0);
         Step++;
       }
     }
 
- while (Step == 20) //rotate CC 90 deg and elevatorwheels on 
+ while (Step == 20) //rotate CC 1/8 and elevatorwheels on 
      {
-//    if(DriveREnco.read() < Rot && DriveLEnco.read() > Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR, MaxSpeed) 
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Rot && DriveLEnco.read() < Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+    if(DriveREnco.read() < Rot1_8 && DriveLEnco.read() > -Rot1_8) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR, MaxSpeed); 
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Rot1_8 && DriveLEnco.read() < -Rot1_8) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
      unsigned long  CurentTime = millis();
       if (CurentTime < ElevWheelsActive)
       {
@@ -543,20 +539,19 @@ void loop() {
       }
     }
 
-  while (Step == 21)// uncompress Car Level 1
+  while (Step == 21)// uncompress Car Level 0
   {
-    if(ElevEnco.read() > Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() < Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -573,24 +568,24 @@ void loop() {
 
  while (Step == 22)// Forward 1.1
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }
 
   while (Step == 23) //Compress Car and hold
@@ -613,23 +608,23 @@ void loop() {
 
   while (Step == 24) // Move back 1.1, up level 1
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
 
     if(ElevEnco.read() < Level1) //Encoder position not yet reached
       {
@@ -642,30 +637,29 @@ void loop() {
     else 
       {
         CrcLib::SetPwmOutput(Elev,0);
-        ElevEnco.write(0);
         Step++;
       }
     }
     
-   while (Step == 25) //rotate CC 3/8 and elevatorwheels on 
+   while (Step == 25) //rotate C 3/8 and elevatorwheels on 
      {
-//    if(DriveREnco.read() < Rot && DriveLEnco.read() > Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR, MaxSpeed) 
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Rot && DriveLEnco.read() < Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+    if(DriveREnco.read() > -Rot3_8 && DriveLEnco.read() < Rot3_8) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed); 
+      CrcLib::SetPwmOutput(DriveL, MaxSpeed);
+    }
+    else if (DriveREnco.read() < -Rot3_8 && DriveLEnco.read() > Rot3_8) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR, 0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
      unsigned long  CurentTime = millis();
       if (CurentTime < ElevWheelsActive)
       {
@@ -679,20 +673,19 @@ void loop() {
       }
     }
 
-  while (Step == 26)// uncompress Car and Level 1
+  while (Step == 26)// uncompress Car and Level 0
   {
-    if(ElevEnco.read() > Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() < Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -709,24 +702,24 @@ void loop() {
 
   while (Step == 27)// Forward 4.3
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }
 
   while (Step == 28) //Compress Car and hold
@@ -749,23 +742,23 @@ void loop() {
 
   while (Step == 29) // Move back 4.3, up level 1
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
 
     if(ElevEnco.read() < Level1) //Encoder position not yet reached
       {
@@ -778,30 +771,29 @@ void loop() {
     else 
       {
         CrcLib::SetPwmOutput(Elev,0);
-        ElevEnco.write(0);
         Step++;
       }
     }
 
      while (Step == 30) //rotate CC 3/8 and elevatorwheels on 
      {
-//    if(DriveREnco.read() < Rot && DriveLEnco.read() > Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR, MaxSpeed) 
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Rot && DriveLEnco.read() < Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+    if(DriveREnco.read() < Rot3_8 && DriveLEnco.read() > -Rot3_8) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR, MaxSpeed); 
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Rot3_8 && DriveLEnco.read() < -Rot3_8) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL, 0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
      unsigned long  CurentTime = millis();
       if (CurentTime < ElevWheelsActive)
       {
@@ -815,20 +807,19 @@ void loop() {
       }
     }
 
-    while (Step == 31)// uncompress Car and Level 1
+    while (Step == 31)// uncompress Car and Level 0
   {
-    if(ElevEnco.read() > Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() < Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -845,24 +836,24 @@ void loop() {
 
   while (Step == 32)// Forward 1.2
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }   
 
   while (Step == 33) //Compress Car and hold
@@ -885,23 +876,23 @@ void loop() {
 
   while (Step == 34) // Move back 1.2, up level 2
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
 
     if(ElevEnco.read() < Level2) //Encoder position not yet reached
       {
@@ -914,30 +905,29 @@ void loop() {
     else 
       {
         CrcLib::SetPwmOutput(Elev,0);
-        //ElevEnco.write(0); //use this same value to go back down 
         Step++;
       }
     }
 
      while (Step == 35) //rotate C 1/4 and elevatorwheels on 
      {
-//    if(DriveREnco.read() < Rot && DriveLEnco.read() > Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed) 
-//      CrcLib::SetPwmOutput(DriveL, MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Rot && DriveLEnco.read() < Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR, 0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+    if(DriveREnco.read() > -Rot1_4 && DriveLEnco.read() < Rot1_4) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed); 
+      CrcLib::SetPwmOutput(DriveL, MaxSpeed);
+    }
+    else if (DriveREnco.read() < -Rot1_4 && DriveLEnco.read() > Rot1_4) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR, 0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
      unsigned long  CurentTime = millis();
       if (CurentTime < ElevWheelsActive)
       {
@@ -951,20 +941,19 @@ void loop() {
       }
     }
   
-  while (Step == 36)// uncompress Car and go Level 1
+  while (Step == 36)// uncompress Car and go Level 0
   {
-    if(ElevEnco.read() > Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() < Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -981,24 +970,24 @@ void loop() {
 
   while (Step == 37)// Forward 3.1
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }   
 
   while (Step == 38) //Compress Car and hold
@@ -1032,7 +1021,6 @@ void loop() {
     else 
       {
         CrcLib::SetPwmOutput(Elev,0);
-        //ElevEnco.write(0); //use this same value to go back down 
         Step++;
       }
     }
@@ -1052,20 +1040,19 @@ void loop() {
       }
     }
   
-  while (Step == 41)// uncompress Car and go Level 1
+  while (Step == 41)// uncompress Car and go Level 0
   {
-    if(ElevEnco.read() > Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() < Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -1082,24 +1069,24 @@ void loop() {
 
   while (Step == 42)// Forward 3.3
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }   
 
   while (Step == 43) //Compress Car and hold
@@ -1122,23 +1109,23 @@ void loop() {
 
   while (Step == 44) // Move back 3.2, up level 6
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
 
     if(ElevEnco.read() < Level6) //Encoder position not yet reached
       {
@@ -1151,30 +1138,29 @@ void loop() {
     else 
       {
         CrcLib::SetPwmOutput(Elev,0);
-        //ElevEnco.write(0); //use this same value to go back down 
         Step++;
       }
     }
 
      while (Step == 45) //rotate C 1/2 and elevatorwheels on 
      {
-//    if(DriveREnco.read() < Rot && DriveLEnco.read() > Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed) 
-//      CrcLib::SetPwmOutput(DriveL, MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Rot && DriveLEnco.read() < Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR, 0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//    }
+    if(DriveREnco.read() > -Rot1_2 && DriveLEnco.read() < Rot1_2) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-MaxSpeed); 
+      CrcLib::SetPwmOutput(DriveL, MaxSpeed);
+    }
+    else if (DriveREnco.read() < -Rot1_2 && DriveLEnco.read() > Rot1_2) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR, 0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+    }
      unsigned long  CurentTime = millis();
       if (CurentTime < ElevWheelsActive)
       {
@@ -1188,20 +1174,19 @@ void loop() {
       }
     }
   
-  while (Step == 46)// uncompress Car and go Level 1
+  while (Step == 46)// uncompress Car and go Level 0
   {
-    if(ElevEnco.read() > Level1) //Encoder position not yet reached
+    if(ElevEnco.read() > Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -MaxSpeed); 
     }
-    else if (ElevEnco.read() < Level1) //Encoder position not yet reached
+    else if (ElevEnco.read() < Level0) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, 0.5*MaxSpeed);
     }
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
     }
     unsigned long  CurentTime = millis();
     if (CurentTime < CarActive)
@@ -1218,46 +1203,46 @@ void loop() {
 
  while (Step == 47)// Forward 6
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }   
 
    while (Step == 48) //rotate CC 1/4  
      {
-//    if(DriveREnco.read() < Rot && DriveLEnco.read() > Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-MaxSpeed) 
-//      CrcLib::SetPwmOutput(DriveL, MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Rot && DriveLEnco.read() < Rot) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR, 0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++
-//    }
+       if(DriveREnco.read() < Rot1_4 && DriveLEnco.read() > -Rot1_4) //Encoder position not yet reached
+        {
+          CrcLib::SetPwmOutput(DriveR, MaxSpeed); 
+          CrcLib::SetPwmOutput(DriveL,-MaxSpeed);
+        }
+        else if (DriveREnco.read() > Rot1_4 && DriveLEnco.read() < -Rot1_4) //Encoder position not yet reached
+        {
+          CrcLib::SetPwmOutput(DriveR, 0.5*MaxSpeed);
+          CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+        }
+        else 
+        {
+          CrcLib::SetPwmOutput(DriveR,0);
+          CrcLib::SetPwmOutput(DriveL,0);
+          DriveREnco.write(0);
+          DriveLEnco.write(0);
+          Step++;
+        }
      }
 
   while (Step = 49)//sponge wall reverse
@@ -1265,7 +1250,7 @@ void loop() {
     unsigned long  CurentTime = millis();
     if (CurentTime < SpongeReverse)
     {
-      CrcLib::SetPwmOutput(Sponge,-127);
+      CrcLib::SetPwmOutput(Sponge,-MaxSpeed);
     }
     else 
     {
@@ -1293,11 +1278,11 @@ void loop() {
 
    while (Step == 51)// Preare Support Bar
    {
-    if(ElevEnco.read() < Level5) //not yet decided 
+    if(ElevEnco.read() < Level6) //not yet decided 
     {
       CrcLib::SetPwmOutput(Elev, MaxSpeed); 
     }
-    else if (ElevEnco.read() > Level5) //Encoder position not yet reached
+    else if (ElevEnco.read() > Level6) //Encoder position not yet reached
     {
       CrcLib::SetPwmOutput(Elev, -0.5*MaxSpeed);
     }
@@ -1337,7 +1322,6 @@ void loop() {
     else 
     {
       CrcLib::SetPwmOutput(Elev,0);
-      ElevEnco.write(0);
       Step++;
     } 
    }
@@ -1345,24 +1329,24 @@ void loop() {
     
 while (Step == 54)// Forward 7
   {
-//  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
-//    }
-//    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
-//    {
-//      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
-//      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
-//    }
-//    else 
-//    {
-//      CrcLib::SetPwmOutput(DriveR,0);
-//      CrcLib::SetPwmOutput(DriveL,0);
-//      DriveREnco.write(0);
-//      DriveLEnco.write(0);
-//      Step++;
-//    }
+  if(DriveREnco.read() < Move1m && DriveLEnco.read() < Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,MaxSpeed);
+    }
+    else if (DriveREnco.read() > Move1m && DriveLEnco.read() > Move1m) //Encoder position not yet reached
+    {
+      CrcLib::SetPwmOutput(DriveR,-0.5*MaxSpeed);
+      CrcLib::SetPwmOutput(DriveL,-0.5*MaxSpeed);
+    }
+    else 
+    {
+      CrcLib::SetPwmOutput(DriveR,0);
+      CrcLib::SetPwmOutput(DriveL,0);
+      DriveREnco.write(0);
+      DriveLEnco.write(0);
+      Step++;
+    }
   }   
 
     while (Step == 55) // drop ball
@@ -1380,8 +1364,7 @@ while (Step == 54)// Forward 7
         }
     }
 
-    }
-  
+  }
   
 //  if(ElevEnco.read() <= STOP_POSITION) //Encoder position not yet reached
 //  {
