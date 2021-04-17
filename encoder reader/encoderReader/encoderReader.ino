@@ -22,11 +22,11 @@ public:
 		MAXSPEED = maxspeed;
 		CrcLib::InitializePwmOutput(pwm);
 		pinPWM = pwm;
-		enc.write(0);
+
 	}
 	long read()
 	{
-		return enc.read();
+
 	}
 	void setSpeed(Encoder enc)
 	{
@@ -42,8 +42,9 @@ public:
 		{
 			speed = 0;
 		}
+   CrcLib::SetPwmOutput (pinPWM, speed);
 	}
-	void turn(Endoder enc, int count, int dir)
+	void turn(Encoder enc, int count, int dir)
 	{
 		long encVal;
 		encVal = enc.read();
@@ -54,11 +55,10 @@ public:
 	{
 		setSpeed(enc);
 		CrcLib::SetPwmOutput(pinPWM, speed);
-		// Serial.print("Encoder Value: ");
-		// Serial.print(enc.read());
-		// int speed = setSpeed();
-		// Serial.print("; Motor Speed: ");
-		// Serial.print(speed);
+		Serial.print("Encoder Value: ");
+		Serial.print(enc.read());
+		Serial.print("; Motor Speed: ");
+		Serial.print(speed);
 	}
 };
 
@@ -67,8 +67,8 @@ public:
 //   Good Performance: only the first pin has interrupt capability
 //   Low Performance:  neither pin has interrupt capability
 
-EnMotor motor1(CRC_PWM_1, 50);
-Encoder encoder1(CRC_ENCO_A, CRC_ENCO_B)
+EnMotor motor1(CRC_PWM_1, 127);
+Encoder encoder1(CRC_ENCO_A, CRC_ENCO_B);
 int dir = 1;
 void setup()
 {
@@ -87,5 +87,6 @@ void loop()
 		// motor1Enco.write(0);
 		motor1.turn(encoder1, 2, dir);
 		dir = -1 * dir;
+   motor1.setSpeed(encoder1);
 	}
 }
